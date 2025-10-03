@@ -1,0 +1,12 @@
+# FrameSift Lite Desktop Application Requirements
+# Core dependencies for the Tkinter GUI application
+
+# Computer Vision and Image Processing
+opencv-python>=4.8.1.78
+numpy>=1.24.3
+Pillow>=10.0.1
+
+# GUI and Visualization
+matplotlib>=3.7.2
+
+# Note: tkinter is included with Python standard library

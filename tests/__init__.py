@@ -1,0 +1,3 @@
+"""
+FrameSift Lite Test Suite
+"""
