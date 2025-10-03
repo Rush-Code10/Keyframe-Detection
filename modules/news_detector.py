@@ -1,14 +1,24 @@
 """
 News Content Detection Module
-Specialized detector for news content transitions in video clips.
+Specialized detector for news content transitions in video clips with text extraction.
 """
 
 import cv2
 import numpy as np
 import os
+import json
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 import logging
+
+# Import text extraction module
+try:
+    from .text_extractor import create_text_extractor, ExtractedText, TextRegion
+    TEXT_EXTRACTION_AVAILABLE = True
+except ImportError:
+    TEXT_EXTRACTION_AVAILABLE = False
+    ExtractedText = None
+    TextRegion = None
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +30,7 @@ class NewsTransition:
     transition_type: str  # 'headline_change', 'person_change', 'scene_change'
     confidence: float
     roi_changes: Dict[str, float]  # Region-specific change scores
+    extracted_text: Optional[object] = None  # OCR results for this keyframe
 
 class NewsContentDetector:
     """Specialized detector for news content transitions."""
@@ -46,6 +57,15 @@ class NewsContentDetector:
         except Exception as e:
             logger.warning(f"Could not load face cascade: {e}")
             self.face_cascade = None
+            
+        # Initialize text extractor
+        self.text_extractor = None
+        if TEXT_EXTRACTION_AVAILABLE:
+            try:
+                self.text_extractor = create_text_extractor()
+                logger.info("Text extraction initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize text extractor: {e}")
             
         self.prev_frame = None
         self.prev_faces = []
@@ -233,13 +253,25 @@ class NewsContentDetector:
         else:
             transition_type = 'scene_change'
             confidence = scene_score
+        
+        # Extract text from this keyframe
+        extracted_text = None
+        if self.text_extractor:
+            try:
+                extracted_text = self.text_extractor.extract_text_from_keyframe(
+                    frame, frame_num, timestamp
+                )
+                logger.info(f"Extracted {len(extracted_text.regions)} text regions from frame {frame_num}")
+            except Exception as e:
+                logger.warning(f"Text extraction failed for frame {frame_num}: {e}")
             
         return NewsTransition(
             frame_number=frame_num,
             timestamp=timestamp,
             transition_type=transition_type,
             confidence=confidence,
-            roi_changes=roi_changes
+            roi_changes=roi_changes,
+            extracted_text=extracted_text
         )
     
     def _filter_transitions(self, transitions: List[NewsTransition]) -> List[NewsTransition]:
@@ -267,18 +299,22 @@ class NewsKeyframeExtractor:
         self.detector = detector
     
     def extract_keyframes(self, video_path: str, output_dir: str, 
-                         progress_callback=None) -> List[str]:
-        """Extract keyframes from news clips focusing on content changes."""
+                         progress_callback=None) -> Tuple[List[str], List[Dict]]:
+        """
+        Extract keyframes from news clips focusing on content changes.
+        Returns both keyframe paths and text extraction results.
+        """
         
         # Detect transitions
         transitions = self.detector.detect_transitions(video_path, progress_callback)
         
         if not transitions:
             logger.warning("No news transitions detected")
-            return []
+            return [], []
         
-        # Extract frames
+        # Extract frames and text
         keyframe_paths = []
+        text_results = []
         cap = cv2.VideoCapture(video_path)
         
         for i, transition in enumerate(transitions):
@@ -299,6 +335,34 @@ class NewsKeyframeExtractor:
                               f"(confidence: {transition.confidence:.2f})")
                 else:
                     keyframe_paths.append(filepath)  # Still add to list even if exists
+                
+                # Process extracted text if available
+                if transition.extracted_text:
+                    text_data = {
+                        'keyframe_path': filepath,
+                        'frame_number': transition.frame_number,
+                        'timestamp': transition.timestamp,
+                        'transition_type': transition.transition_type,
+                        'ocr_method': transition.extracted_text.processing_method,
+                        'total_confidence': transition.extracted_text.total_confidence,
+                        'text_regions': []
+                    }
+                    
+                    for region in transition.extracted_text.regions:
+                        text_data['text_regions'].append({
+                            'text': region.text,
+                            'confidence': region.confidence,
+                            'bbox': region.bbox,
+                            'region_type': region.region_type
+                        })
+                    
+                    text_results.append(text_data)
+                    
+                    # Log extracted text summary
+                    if transition.extracted_text.regions:
+                        main_texts = [r.text for r in transition.extracted_text.regions if len(r.text) > 5]
+                        if main_texts:
+                            logger.info(f"Text extracted from frame {transition.frame_number}: {', '.join(main_texts[:3])}")
             
             # Update progress for keyframe extraction
             if progress_callback:
@@ -306,5 +370,20 @@ class NewsKeyframeExtractor:
                 progress_callback(progress)
         
         cap.release()
-        logger.info(f"Extracted {len(keyframe_paths)} news keyframes")
-        return keyframe_paths
+        logger.info(f"Extracted {len(keyframe_paths)} news keyframes with text from {len(text_results)} frames")
+        
+        # Save text extraction results to JSON file
+        if text_results:
+            self._save_text_results(text_results, output_dir)
+        
+        return keyframe_paths, text_results
+    
+    def _save_text_results(self, text_results: List[Dict], output_dir: str):
+        """Save text extraction results to a JSON file."""
+        try:
+            json_path = os.path.join(output_dir, "extracted_text.json")
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(text_results, f, indent=2, ensure_ascii=False)
+            logger.info(f"Text extraction results saved to {json_path}")
+        except Exception as e:
+            logger.error(f"Failed to save text results: {e}")

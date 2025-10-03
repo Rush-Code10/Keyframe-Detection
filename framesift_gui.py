@@ -28,6 +28,7 @@ import numpy as np
 from modules.video_processor import VideoProcessor
 from modules.results_generator import ResultsGenerator
 from modules.news_detector import NewsContentDetector, NewsKeyframeExtractor
+from modules.simple_fan_control import start_processing_fans, stop_processing_fans, is_fan_control_active
 
 # Configure logging
 logging.basicConfig(
@@ -64,7 +65,24 @@ class FrameSiftGUI:
         self.news_processing_thread = None
         self.news_output_dir = None
         
+        # Simple fan control
+        self.update_fan_status()  # Start fan status updates
+        
+        # Setup cleanup on window close
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
         logger.info("FrameSift GUI initialized successfully")
+    
+    def on_closing(self):
+        """Handle application closing"""
+        try:
+            # Stop fan control
+            stop_processing_fans()
+            logger.info("Fan control stopped on application close")
+        except Exception as e:
+            logger.error(f"Error stopping fan control: {e}")
+        finally:
+            self.root.destroy()
     
     def setup_window(self):
         """Configure the main window"""
@@ -597,10 +615,16 @@ class FrameSiftGUI:
                                 font=('Arial', 14), padding=(10, 8))  # Larger font and padding
         status_label.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         
+        # Fan status - shows if fan control is active
+        self.fan_status_var = tk.StringVar(value="🌀 Fan: Ready")
+        self.fan_label = ttk.Label(status_frame, textvariable=self.fan_status_var, relief="sunken",
+                                  font=('Arial', 14), padding=(10, 8))
+        self.fan_label.grid(row=0, column=1, padx=(0, 10))
+        
         # Version info - larger font
         version_label = ttk.Label(status_frame, text="FrameSift Lite v1.0", relief="sunken",
                                  font=('Arial', 14), padding=(10, 8))
-        version_label.grid(row=0, column=1)
+        version_label.grid(row=0, column=2)
     
     def setup_logging_display(self):
         """Set up logging to display in the GUI"""
@@ -790,7 +814,10 @@ class FrameSiftGUI:
     def process_news_video_thread(self):
         """Process news video in background thread"""
         try:
-            self.update_news_status("Initializing news content detector...")
+            # Start fan control for news processing
+            start_processing_fans()
+            
+            self.update_news_status("� Starting fan control and news content detector...")
             self.update_news_progress(5)
             
             # Initialize news detector with current parameters
@@ -815,7 +842,7 @@ class FrameSiftGUI:
             def progress_callback(progress):
                 self.update_news_progress(10 + (progress * 0.9))  # Scale to 10-100%
             
-            keyframe_paths = extractor.extract_keyframes(
+            keyframe_paths, text_results = extractor.extract_keyframes(
                 video_path=self.current_news_video_path,
                 output_dir=output_dir,
                 progress_callback=progress_callback
@@ -824,13 +851,17 @@ class FrameSiftGUI:
             self.news_output_dir = output_dir
             
             # Update results display
-            self.root.after(0, lambda: self.news_processing_complete(keyframe_paths))
+            self.root.after(0, lambda: self.news_processing_complete(keyframe_paths, text_results))
             
         except Exception as e:
             error_msg = f"News processing error: {str(e)}"
             logger.error(f"News processing error: {e}")
             logger.error(traceback.format_exc())
             self.root.after(0, lambda: self.news_processing_error(error_msg))
+        
+        finally:
+            # Always stop fan control when news processing ends
+            stop_processing_fans()
     
     def update_news_status(self, message):
         """Update news processing status"""
@@ -841,23 +872,30 @@ class FrameSiftGUI:
         """Update news processing progress bar"""
         self.root.after(0, lambda: self.news_progress_var.set(value))
     
-    def news_processing_complete(self, keyframe_paths):
-        """Handle completion of news processing"""
+    def news_processing_complete(self, keyframe_paths, text_results=None):
+        """Handle completion of news processing with text extraction"""
         self.news_process_btn.config(state="normal")
         self.news_open_folder_btn.config(state="normal")
         self.news_export_btn.config(state="normal")
         self.news_progress_var.set(100)
         
-        # Store keyframe paths for export
+        # Store keyframe paths and text results for export
         self.news_keyframe_paths = keyframe_paths
+        self.news_text_results = text_results or []
         
         # Display results
         results_text = f"\n✅ News Content Detection Complete!\n"
-        results_text += f"📊 Extracted {len(keyframe_paths)} transition keyframes\n\n"
+        results_text += f"📊 Extracted {len(keyframe_paths)} transition keyframes\n"
+        
+        if text_results:
+            total_text_regions = sum(len(result['text_regions']) for result in text_results)
+            results_text += f"📝 Extracted text from {len(text_results)} keyframes ({total_text_regions} text regions)\n"
+        
+        results_text += "\n"
         
         if keyframe_paths:
             results_text += "🎬 Detected Transitions:\n"
-            for path in keyframe_paths:
+            for i, path in enumerate(keyframe_paths):
                 filename = os.path.basename(path)
                 # Parse filename to get transition info
                 parts = filename.replace('.jpg', '').split('_')
@@ -865,9 +903,23 @@ class FrameSiftGUI:
                     frame_num = parts[2]
                     transition_type = f"{parts[3]}_{parts[4]}"  # e.g., "scene_change"
                     confidence = f"{parts[5]}.{parts[6]}"
-                    results_text += f"  • Frame {frame_num}: {transition_type.replace('_', ' ').title()} (confidence: {confidence})\n"
+                    results_text += f"  • Frame {frame_num}: {transition_type.replace('_', ' ').title()} (confidence: {confidence})"
+                    
+                    # Add text preview if available
+                    if text_results and i < len(text_results):
+                        text_result = text_results[i]
+                        if text_result['text_regions']:
+                            main_texts = [r['text'] for r in text_result['text_regions'] if len(r['text']) > 3]
+                            if main_texts:
+                                preview = ', '.join(main_texts[:2])  # Show first 2 text regions
+                                if len(preview) > 50:
+                                    preview = preview[:47] + "..."
+                                results_text += f" | Text: {preview}"
+                    results_text += "\n"
             
             results_text += f"\n📁 Results saved to: {self.news_output_dir}\n"
+            if text_results:
+                results_text += f"📄 Text extraction results saved to: extracted_text.json\n"
         else:
             results_text += "ℹ️ No significant news transitions detected.\n"
             results_text += "Try adjusting the threshold parameters for more sensitive detection.\n"
@@ -875,7 +927,7 @@ class FrameSiftGUI:
         self.news_results_text.insert(tk.END, results_text)
         self.news_results_text.see(tk.END)
         
-        logger.info(f"News processing completed successfully. {len(keyframe_paths)} keyframes extracted.")
+        logger.info(f"News processing completed successfully. {len(keyframe_paths)} keyframes extracted with text from {len(text_results or [])} frames.")
     
     def news_processing_error(self, error_msg):
         """Handle news processing error"""
@@ -1008,6 +1060,25 @@ class FrameSiftGUI:
             self.news_results_text.insert(tk.END, f"❌ Export Failed: {error_msg}\n")
             self.news_results_text.see(tk.END)
     
+
+    
+    def update_fan_status(self):
+        """Update fan status display in status bar"""
+        try:
+            if is_fan_control_active():
+                status_text = "🌀 Fan: HIGH SPEED"
+            else:
+                status_text = "� Fan: Normal"
+            
+            self.fan_status_var.set(status_text)
+            
+        except Exception as e:
+            logger.debug(f"Error updating fan status: {e}")
+            self.fan_status_var.set("� Fan: N/A")
+        
+        # Schedule next update
+        self.root.after(2000, self.update_fan_status)  # Update every 2 seconds
+    
     def start_processing(self):
         """Start video processing in a separate thread"""
         if not self.current_video_path:
@@ -1032,7 +1103,10 @@ class FrameSiftGUI:
     def process_video_thread(self):
         """Process video in background thread"""
         try:
-            self.update_status("Initializing video processor...")
+            # Start fan control
+            start_processing_fans()
+            
+            self.update_status("� Starting fan control and video processor...")
             self.update_progress(5)
             
             # Initialize processor with current parameters
@@ -1108,6 +1182,10 @@ class FrameSiftGUI:
             logger.error(traceback.format_exc())
             
             self.root.after(0, lambda: self.processing_error(error_msg))
+        
+        finally:
+            # Always stop fan control when processing ends
+            stop_processing_fans()
     
     def update_status(self, message):
         """Update status message thread-safely"""

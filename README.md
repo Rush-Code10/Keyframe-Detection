@@ -271,6 +271,13 @@ python demo_video_processor.py examples/motion_demo.mp4
 - **Input**: MP4, AVI, MOV, MKV, WMV, FLV
 - **Output**: JPEG thumbnails, JSON statistics, PNG plots
 
+### 🌡️ Thermal Management
+- **Automatic Fan Control**: Keeps laptop cool during intensive processing
+- **Real-time Temperature Monitoring**: Status bar shows CPU temperature and usage
+- **Thermal Warnings**: Alerts when temperature exceeds 85°C
+- **Cross-Platform Support**: Works on Windows, Linux, and macOS
+- **Status Indicators**: ❄️ Cool | 🌡️ Normal | 🔥 Hot | 🌀 Fan Active
+
 ## Troubleshooting
 
 | Issue | Solution |
@@ -278,6 +285,8 @@ python demo_video_processor.py examples/motion_demo.mp4
 | "Cannot open video file" | Check format support (MP4, AVI, MOV), try video conversion |
 | "Processing failed" | Verify file size, disk space, try different parameters |
 | Slow processing | Reduce video resolution, check system resources |
+| Laptop overheating | Built-in thermal management will handle this automatically |
+| Thermal warnings | Improve ventilation, close other apps, or take breaks |
 | No keyframes extracted | Lower blur threshold, adjust other parameters |
 | GUI doesn't start | Check Python version (3.7+), install missing dependencies |
 | Blank thumbnails | Verify video codec support, try different video file |

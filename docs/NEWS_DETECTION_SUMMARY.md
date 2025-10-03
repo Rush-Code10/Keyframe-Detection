@@ -133,6 +133,7 @@ keyframes = extractor.extract_keyframes("news_video.mp4", "output_dir")
 4. **Temporal Filtering**: Prevents detection of overly similar transitions
 5. **Seamless Integration**: Fully integrated into existing GUI workflow
 6. **Detailed Results**: Confidence scores and transition type classification
+7. **Thermal Management**: Automatic fan control to prevent laptop overheating during processing
 
 ## 📈 Performance Characteristics
 
@@ -141,4 +142,29 @@ keyframes = extractor.extract_keyframes("news_video.mp4", "output_dir")
 - **Accuracy**: High precision for news content with proper parameter tuning
 - **Scalability**: Handles videos from short clips to full broadcasts
 
-The news detection pipeline is now fully integrated and ready for use! 🎉
+## 🌡️ Thermal Management (NEW!)
+
+The system now includes automatic thermal management to protect your laptop during intensive processing:
+
+### Features:
+- **Automatic Fan Control**: Fans automatically spin up during processing
+- **Temperature Monitoring**: Real-time CPU temperature tracking
+- **Thermal Warnings**: Alerts if system gets too hot (>85°C)
+- **Status Display**: Live temperature and CPU usage in status bar
+- **Cross-Platform**: Works on Windows, Linux, and macOS
+- **Safe Processing**: Automatic cleanup when processing completes
+
+### Thermal Status Icons:
+- ❄️ Cool (<70°C)
+- 🌡️ Normal (70-80°C)  
+- 🔥 Hot (>80°C)
+- 🌀 Fan Control Active (during processing)
+
+### Supported Fan Control Methods:
+- **Windows**: NBFC, PowerShell power plans, SpeedFan
+- **Linux**: fancontrol, CPU governor control
+- **macOS**: System thermal management
+
+The thermal management automatically starts when you begin video processing and stops when complete, ensuring your laptop stays cool during intensive keyframe extraction tasks.
+
+The news detection pipeline is now fully integrated with thermal management and ready for use! 🎉

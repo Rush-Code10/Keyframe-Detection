@@ -1,0 +1,47 @@
+[
+  {
+    "keyframe_path": "demo_news_text_results\\news_keyframe_000001_scene_change_0_80.jpg",
+    "frame_number": 1,
+    "timestamp": 0.05,
+    "transition_type": "scene_change",
+    "ocr_method": "EasyOCR + Tesseract",
+    "total_confidence": 0.0,
+    "text_regions": []
+  },
+  {
+    "keyframe_path": "demo_news_text_results\\news_keyframe_000060_headline_change_0_69.jpg",
+    "frame_number": 60,
+    "timestamp": 3.0,
+    "transition_type": "headline_change",
+    "ocr_method": "EasyOCR + Tesseract",
+    "total_confidence": 0.0,
+    "text_regions": []
+  },
+  {
+    "keyframe_path": "demo_news_text_results\\news_keyframe_000101_headline_change_1_00.jpg",
+    "frame_number": 101,
+    "timestamp": 5.05,
+    "transition_type": "headline_change",
+    "ocr_method": "EasyOCR + Tesseract",
+    "total_confidence": 0.0,
+    "text_regions": []
+  },
+  {
+    "keyframe_path": "demo_news_text_results\\news_keyframe_000165_scene_change_1_00.jpg",
+    "frame_number": 165,
+    "timestamp": 8.25,
+    "transition_type": "scene_change",
+    "ocr_method": "EasyOCR + Tesseract",
+    "total_confidence": 0.0,
+    "text_regions": []
+  },
+  {
+    "keyframe_path": "demo_news_text_results\\news_keyframe_000224_headline_change_1_00.jpg",
+    "frame_number": 224,
+    "timestamp": 11.2,
+    "transition_type": "headline_change",
+    "ocr_method": "EasyOCR + Tesseract",
+    "total_confidence": 0.0,
+    "text_regions": []
+  }
+]

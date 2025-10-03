@@ -6,7 +6,14 @@ opencv-python>=4.8.1.78
 numpy>=1.24.3
 Pillow>=10.0.1
 
+# Text Extraction and OCR
+pytesseract>=0.3.10
+easyocr>=1.7.0
+
 # GUI and Visualization
 matplotlib>=3.7.2
+
+# System Monitoring and Thermal Management
+psutil>=5.9.0
 
 # Note: tkinter is included with Python standard library
