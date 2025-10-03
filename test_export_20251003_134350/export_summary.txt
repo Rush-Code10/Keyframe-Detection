@@ -1,0 +1,18 @@
+News Transition Frames Export Summary
+========================================
+
+Export Date: 2025-10-03 13:43:50
+Source: Demo Results
+Total Frames Exported: 5
+
+Exported Files:
+   1. news_keyframe_000001_scene_change_0_80.jpg
+      Frame: 000001, Type: Scene Change, Confidence: 0.80
+   2. news_keyframe_000060_headline_change_0_69.jpg
+      Frame: 000060, Type: Headline Change, Confidence: 0.69
+   3. news_keyframe_000101_headline_change_1_00.jpg
+      Frame: 000101, Type: Headline Change, Confidence: 1.00
+   4. news_keyframe_000165_scene_change_1_00.jpg
+      Frame: 000165, Type: Scene Change, Confidence: 1.00
+   5. news_keyframe_000224_headline_change_1_00.jpg
+      Frame: 000224, Type: Headline Change, Confidence: 1.00

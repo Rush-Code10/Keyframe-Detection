@@ -27,6 +27,7 @@ import numpy as np
 # Import the video processing modules
 from modules.video_processor import VideoProcessor
 from modules.results_generator import ResultsGenerator
+from modules.news_detector import NewsContentDetector, NewsKeyframeExtractor
 
 # Configure logging
 logging.basicConfig(
@@ -56,6 +57,12 @@ class FrameSiftGUI:
         self.processing_results = None
         self.session_id = None
         self.processing_thread = None
+        
+        # News processing state
+        self.current_news_video_path = None
+        self.news_session_id = None
+        self.news_processing_thread = None
+        self.news_output_dir = None
         
         logger.info("FrameSift GUI initialized successfully")
     
@@ -90,6 +97,15 @@ class FrameSiftGUI:
         
         # Results variables
         self.results_text = tk.StringVar(value="")
+        
+        # News detection variables
+        self.news_headline_threshold_var = tk.DoubleVar(value=0.5)
+        self.news_person_threshold_var = tk.DoubleVar(value=0.4)
+        self.news_scene_threshold_var = tk.DoubleVar(value=0.3)
+        self.news_min_gap_var = tk.DoubleVar(value=2.0)
+        self.news_video_path_var = tk.StringVar()
+        self.news_video_info_var = tk.StringVar(value="No video loaded")
+        self.news_results_var = tk.StringVar(value="No news analysis results yet")
     
     def setup_styles(self):
         """Configure ttk styles with 150% scaling"""
@@ -136,6 +152,7 @@ class FrameSiftGUI:
         # Create tabs with larger spacing
         self.create_upload_tab()
         self.create_parameters_tab()
+        self.create_news_tab()
         self.create_results_tab()
         self.create_logs_tab()
         
@@ -364,6 +381,118 @@ class FrameSiftGUI:
         ttk.Button(preset_frame, text="🚀 Aggressive", 
                   command=self.load_aggressive_preset, style='Large.TButton').pack(side="left", padx=(0, 15))
     
+    def create_news_tab(self):
+        """Create the news content detection tab"""
+        news_frame = ttk.Frame(self.notebook, padding="30")
+        self.notebook.add(news_frame, text="📺 News Detection")
+        
+        # Title
+        title_label = ttk.Label(news_frame, text="News Content Detection", style='Title.TLabel')
+        title_label.grid(row=0, column=0, columnspan=2, pady=(0, 30))
+        
+        # Configure grid weights
+        news_frame.columnconfigure(0, weight=1)
+        
+        # Video selection section for news
+        news_video_section = ttk.LabelFrame(news_frame, text="News Video Selection", padding="25")
+        news_video_section.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 30))
+        news_video_section.columnconfigure(1, weight=1)
+        
+        ttk.Label(news_video_section, text="Select News Video:", font=('Arial', 16)).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        
+        news_video_entry = ttk.Entry(news_video_section, textvariable=self.news_video_path_var, width=60, font=('Arial', 14))
+        news_video_entry.grid(row=0, column=1, sticky="ew", padx=(15, 15))
+        
+        news_browse_btn = ttk.Button(news_video_section, text="📁 Browse...", command=self.browse_news_video, style='Large.TButton')
+        news_browse_btn.grid(row=0, column=2, padx=(0, 0))
+        
+        # News video info display
+        self.news_video_info_label = ttk.Label(news_video_section, textvariable=self.news_video_info_var, style='Info.TLabel')
+        self.news_video_info_label.grid(row=1, column=0, columnspan=3, sticky="w", pady=(15, 0))
+        
+        # News detection parameters
+        news_params_section = ttk.LabelFrame(news_frame, text="Detection Parameters", padding="25")
+        news_params_section.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 30))
+        news_params_section.columnconfigure(1, weight=1)
+        
+        # Headline change threshold
+        ttk.Label(news_params_section, text="Headline Change:", font=('Arial', 16)).grid(row=0, column=0, sticky="w", pady=(5, 5))
+        headline_scale = ttk.Scale(news_params_section, from_=0.1, to=1.0, 
+                                  variable=self.news_headline_threshold_var, orient="horizontal", length=400)
+        headline_scale.grid(row=0, column=1, sticky="ew", padx=(15, 15))
+        self.news_headline_label = ttk.Label(news_params_section, text="0.5", font=('Arial', 16, 'bold'))
+        self.news_headline_label.grid(row=0, column=2)
+        
+        # Person change threshold
+        ttk.Label(news_params_section, text="Person Change:", font=('Arial', 16)).grid(row=1, column=0, sticky="w", pady=(5, 5))
+        person_scale = ttk.Scale(news_params_section, from_=0.1, to=1.0, 
+                                variable=self.news_person_threshold_var, orient="horizontal", length=400)
+        person_scale.grid(row=1, column=1, sticky="ew", padx=(15, 15))
+        self.news_person_label = ttk.Label(news_params_section, text="0.4", font=('Arial', 16, 'bold'))
+        self.news_person_label.grid(row=1, column=2)
+        
+        # Scene change threshold
+        ttk.Label(news_params_section, text="Scene Change:", font=('Arial', 16)).grid(row=2, column=0, sticky="w", pady=(5, 5))
+        scene_scale = ttk.Scale(news_params_section, from_=0.1, to=1.0, 
+                               variable=self.news_scene_threshold_var, orient="horizontal", length=400)
+        scene_scale.grid(row=2, column=1, sticky="ew", padx=(15, 15))
+        self.news_scene_label = ttk.Label(news_params_section, text="0.3", font=('Arial', 16, 'bold'))
+        self.news_scene_label.grid(row=2, column=2)
+        
+        # Minimum gap between transitions
+        ttk.Label(news_params_section, text="Min Gap (seconds):", font=('Arial', 16)).grid(row=3, column=0, sticky="w", pady=(5, 5))
+        gap_scale = ttk.Scale(news_params_section, from_=0.5, to=10.0, 
+                             variable=self.news_min_gap_var, orient="horizontal", length=400)
+        gap_scale.grid(row=3, column=1, sticky="ew", padx=(15, 15))
+        self.news_gap_label = ttk.Label(news_params_section, text="2.0", font=('Arial', 16, 'bold'))
+        self.news_gap_label.grid(row=3, column=2)
+        
+        # Bind scale events to update labels
+        headline_scale.configure(command=lambda v: self.news_headline_label.configure(text=f"{float(v):.2f}"))
+        person_scale.configure(command=lambda v: self.news_person_label.configure(text=f"{float(v):.2f}"))
+        scene_scale.configure(command=lambda v: self.news_scene_label.configure(text=f"{float(v):.2f}"))
+        gap_scale.configure(command=lambda v: self.news_gap_label.configure(text=f"{float(v):.1f}"))
+        
+        # Processing section
+        news_process_section = ttk.LabelFrame(news_frame, text="Process News Video", padding="25")
+        news_process_section.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 30))
+        
+        # Process button
+        self.news_process_btn = ttk.Button(news_process_section, text="🎬 Detect News Transitions", 
+                                          command=self.start_news_processing, style='Process.TButton')
+        self.news_process_btn.pack(pady=(10, 10))
+        
+        # Progress bar for news processing
+        self.news_progress_var = tk.DoubleVar()
+        self.news_progress_bar = ttk.Progressbar(news_process_section, variable=self.news_progress_var, 
+                                                style='Large.Horizontal.TProgressbar', length=600)
+        self.news_progress_bar.pack(pady=(10, 10), fill="x")
+        
+        # News results section
+        news_results_section = ttk.LabelFrame(news_frame, text="Detection Results", padding="25")
+        news_results_section.grid(row=4, column=0, columnspan=2, sticky="ew")
+        news_results_section.columnconfigure(0, weight=1)
+        
+        # Results text area
+        self.news_results_text = scrolledtext.ScrolledText(news_results_section, height=10, width=80, 
+                                                          font=('Courier', 12), wrap=tk.WORD)
+        self.news_results_text.grid(row=0, column=0, sticky="nsew", pady=(10, 10))
+        news_results_section.rowconfigure(0, weight=1)
+        
+        # Button frame for news results
+        news_button_frame = ttk.Frame(news_results_section)
+        news_button_frame.grid(row=1, column=0, pady=(0, 10))
+        
+        # Open results folder button
+        self.news_open_folder_btn = ttk.Button(news_button_frame, text="📁 Open Results Folder", 
+                                              command=self.open_news_results_folder, style='Large.TButton', state='disabled')
+        self.news_open_folder_btn.pack(side="left", padx=(0, 15))
+        
+        # Export frames button
+        self.news_export_btn = ttk.Button(news_button_frame, text="💾 Export Frames", 
+                                         command=self.export_news_frames, style='Large.TButton', state='disabled')
+        self.news_export_btn.pack(side="left")
+    
     def create_results_tab(self):
         """Create the results display tab"""
         results_frame = ttk.Frame(self.notebook, padding="20")
@@ -582,6 +711,302 @@ class FrameSiftGUI:
         self.blur_var.set(80.0)
         self.target_reduction_var.set(0.85)
         logger.info("Loaded aggressive preset")
+    
+    # News Detection Methods
+    def browse_news_video(self):
+        """Open file dialog to select news video"""
+        filetypes = [
+            ("Video files", "*.mp4 *.avi *.mov *.mkv *.wmv *.flv"),
+            ("MP4 files", "*.mp4"),
+            ("AVI files", "*.avi"),
+            ("MOV files", "*.mov"),
+            ("All files", "*.*")
+        ]
+        
+        filename = filedialog.askopenfilename(
+            title="Select News Video File",
+            filetypes=filetypes
+        )
+        
+        if filename:
+            self.news_video_path_var.set(filename)
+            self.current_news_video_path = filename
+            self.load_news_video_info(filename)
+            self.news_process_btn.config(state="normal")
+            logger.info(f"Selected news video: {filename}")
+    
+    def load_news_video_info(self, video_path):
+        """Load and display news video information"""
+        try:
+            import cv2
+            cap = cv2.VideoCapture(video_path)
+            
+            if not cap.isOpened():
+                self.news_video_info_var.set("❌ Cannot read video file")
+                return
+            
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            duration = frame_count / fps if fps > 0 else 0
+            
+            file_size = os.path.getsize(video_path) / (1024 * 1024)  # MB
+            
+            info_text = (f"✅ {width}x{height}, {fps:.1f} FPS, "
+                        f"{frame_count} frames, {duration:.1f}s, {file_size:.1f}MB")
+            
+            self.news_video_info_var.set(info_text)
+            cap.release()
+            
+        except Exception as e:
+            self.news_video_info_var.set(f"❌ Error reading video: {str(e)}")
+            logger.error(f"Error loading news video info: {e}")
+    
+    def start_news_processing(self):
+        """Start news video processing in a separate thread"""
+        if not hasattr(self, 'current_news_video_path') or not self.current_news_video_path:
+            messagebox.showerror("Error", "Please select a news video file first")
+            return
+        
+        # Disable controls
+        self.news_process_btn.config(state="disabled")
+        self.news_progress_var.set(0)
+        
+        # Clear previous results
+        self.news_results_text.delete(1.0, tk.END)
+        self.news_results_text.insert(tk.END, "Starting news content detection...\n")
+        
+        # Generate session ID for news processing
+        self.news_session_id = str(uuid.uuid4())
+        
+        # Start processing thread
+        self.news_processing_thread = threading.Thread(target=self.process_news_video_thread)
+        self.news_processing_thread.daemon = True
+        self.news_processing_thread.start()
+        
+        logger.info(f"Started news processing thread for session: {self.news_session_id}")
+    
+    def process_news_video_thread(self):
+        """Process news video in background thread"""
+        try:
+            self.update_news_status("Initializing news content detector...")
+            self.update_news_progress(5)
+            
+            # Initialize news detector with current parameters
+            detector = NewsContentDetector(
+                headline_threshold=self.news_headline_threshold_var.get(),
+                person_threshold=self.news_person_threshold_var.get(),
+                scene_threshold=self.news_scene_threshold_var.get(),
+                min_gap=self.news_min_gap_var.get()
+            )
+            
+            # Initialize keyframe extractor
+            extractor = NewsKeyframeExtractor(detector)
+            
+            self.update_news_status("Analyzing video for news transitions...")
+            self.update_news_progress(10)
+            
+            # Create output directory
+            output_dir = os.path.join("gui_results", f"news_{self.news_session_id}")
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Process news video with progress callback
+            def progress_callback(progress):
+                self.update_news_progress(10 + (progress * 0.9))  # Scale to 10-100%
+            
+            keyframe_paths = extractor.extract_keyframes(
+                video_path=self.current_news_video_path,
+                output_dir=output_dir,
+                progress_callback=progress_callback
+            )
+            
+            self.news_output_dir = output_dir
+            
+            # Update results display
+            self.root.after(0, lambda: self.news_processing_complete(keyframe_paths))
+            
+        except Exception as e:
+            error_msg = f"News processing error: {str(e)}"
+            logger.error(f"News processing error: {e}")
+            logger.error(traceback.format_exc())
+            self.root.after(0, lambda: self.news_processing_error(error_msg))
+    
+    def update_news_status(self, message):
+        """Update news processing status"""
+        self.root.after(0, lambda: self.news_results_text.insert(tk.END, f"{message}\n"))
+        self.root.after(0, lambda: self.news_results_text.see(tk.END))
+    
+    def update_news_progress(self, value):
+        """Update news processing progress bar"""
+        self.root.after(0, lambda: self.news_progress_var.set(value))
+    
+    def news_processing_complete(self, keyframe_paths):
+        """Handle completion of news processing"""
+        self.news_process_btn.config(state="normal")
+        self.news_open_folder_btn.config(state="normal")
+        self.news_export_btn.config(state="normal")
+        self.news_progress_var.set(100)
+        
+        # Store keyframe paths for export
+        self.news_keyframe_paths = keyframe_paths
+        
+        # Display results
+        results_text = f"\n✅ News Content Detection Complete!\n"
+        results_text += f"📊 Extracted {len(keyframe_paths)} transition keyframes\n\n"
+        
+        if keyframe_paths:
+            results_text += "🎬 Detected Transitions:\n"
+            for path in keyframe_paths:
+                filename = os.path.basename(path)
+                # Parse filename to get transition info
+                parts = filename.replace('.jpg', '').split('_')
+                if len(parts) >= 7:
+                    frame_num = parts[2]
+                    transition_type = f"{parts[3]}_{parts[4]}"  # e.g., "scene_change"
+                    confidence = f"{parts[5]}.{parts[6]}"
+                    results_text += f"  • Frame {frame_num}: {transition_type.replace('_', ' ').title()} (confidence: {confidence})\n"
+            
+            results_text += f"\n📁 Results saved to: {self.news_output_dir}\n"
+        else:
+            results_text += "ℹ️ No significant news transitions detected.\n"
+            results_text += "Try adjusting the threshold parameters for more sensitive detection.\n"
+        
+        self.news_results_text.insert(tk.END, results_text)
+        self.news_results_text.see(tk.END)
+        
+        logger.info(f"News processing completed successfully. {len(keyframe_paths)} keyframes extracted.")
+    
+    def news_processing_error(self, error_msg):
+        """Handle news processing error"""
+        self.news_process_btn.config(state="normal")
+        self.news_export_btn.config(state="disabled")
+        self.news_progress_var.set(0)
+        
+        error_text = f"\n❌ News Processing Failed!\n{error_msg}\n"
+        self.news_results_text.insert(tk.END, error_text)
+        self.news_results_text.see(tk.END)
+        
+        messagebox.showerror("Processing Error", error_msg)
+    
+    def open_news_results_folder(self):
+        """Open the news results folder in file explorer"""
+        if hasattr(self, 'news_output_dir') and os.path.exists(self.news_output_dir):
+            try:
+                if sys.platform == "win32":
+                    os.startfile(self.news_output_dir)
+                elif sys.platform == "darwin":
+                    os.system(f"open '{self.news_output_dir}'")
+                else:
+                    os.system(f"xdg-open '{self.news_output_dir}'")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not open folder: {str(e)}")
+        else:
+            messagebox.showwarning("Warning", "No results folder found. Please run news detection first.")
+    
+    def export_news_frames(self):
+        """Export news transition frames to a user-selected folder"""
+        if not hasattr(self, 'news_keyframe_paths') or not self.news_keyframe_paths:
+            messagebox.showwarning("Warning", "No news keyframes to export. Please run news detection first.")
+            return
+        
+        # Ask user to select export directory
+        export_dir = filedialog.askdirectory(
+            title="Select Folder to Export News Transition Frames",
+            initialdir=os.path.expanduser("~")
+        )
+        
+        if not export_dir:
+            return  # User cancelled
+        
+        try:
+            # Create subdirectory with timestamp for this export
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            export_subdir = os.path.join(export_dir, f"news_transitions_{timestamp}")
+            os.makedirs(export_subdir, exist_ok=True)
+            
+            # Copy files with progress tracking
+            total_files = len(self.news_keyframe_paths)
+            copied_files = []
+            
+            for i, source_path in enumerate(self.news_keyframe_paths):
+                if os.path.exists(source_path):
+                    filename = os.path.basename(source_path)
+                    dest_path = os.path.join(export_subdir, filename)
+                    
+                    # Copy file
+                    shutil.copy2(source_path, dest_path)
+                    copied_files.append(dest_path)
+                    
+                    # Update progress in status
+                    progress = ((i + 1) / total_files) * 100
+                    self.news_results_text.insert(tk.END, f"Exporting... {progress:.0f}%\r")
+                    self.news_results_text.see(tk.END)
+                    self.root.update_idletasks()
+            
+            # Clear the progress line
+            self.news_results_text.insert(tk.END, "\n")
+            
+            # Create export summary file
+            summary_path = os.path.join(export_subdir, "export_summary.txt")
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                f.write("News Transition Frames Export Summary\n")
+                f.write("=" * 40 + "\n\n")
+                f.write(f"Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Source Video: {os.path.basename(self.current_news_video_path) if hasattr(self, 'current_news_video_path') else 'Unknown'}\n")
+                f.write(f"Total Frames Exported: {len(copied_files)}\n\n")
+                
+                f.write("Detection Parameters Used:\n")
+                f.write(f"  • Headline Threshold: {self.news_headline_threshold_var.get():.2f}\n")
+                f.write(f"  • Person Threshold: {self.news_person_threshold_var.get():.2f}\n")
+                f.write(f"  • Scene Threshold: {self.news_scene_threshold_var.get():.2f}\n")
+                f.write(f"  • Minimum Gap: {self.news_min_gap_var.get():.1f} seconds\n\n")
+                
+                f.write("Exported Files:\n")
+                for i, file_path in enumerate(copied_files, 1):
+                    filename = os.path.basename(file_path)
+                    # Parse filename for transition info
+                    parts = filename.replace('.jpg', '').split('_')
+                    if len(parts) >= 7:
+                        frame_num = parts[2]
+                        transition_type = f"{parts[3]}_{parts[4]}"
+                        confidence = f"{parts[5]}.{parts[6]}"
+                        f.write(f"  {i:2d}. {filename}\n")
+                        f.write(f"      Frame: {frame_num}, Type: {transition_type.replace('_', ' ').title()}, Confidence: {confidence}\n")
+                    else:
+                        f.write(f"  {i:2d}. {filename}\n")
+            
+            # Show success message
+            success_msg = f"✅ Export Complete!\n\n"
+            success_msg += f"📊 Exported {len(copied_files)} transition frames\n"
+            success_msg += f"📁 Location: {export_subdir}\n"
+            success_msg += f"📄 Summary: export_summary.txt\n\n"
+            
+            self.news_results_text.insert(tk.END, success_msg)
+            self.news_results_text.see(tk.END)
+            
+            # Ask if user wants to open the export folder
+            if messagebox.askyesno("Export Complete", 
+                                 f"Successfully exported {len(copied_files)} frames to:\n{export_subdir}\n\nWould you like to open the export folder?"):
+                try:
+                    if sys.platform == "win32":
+                        os.startfile(export_subdir)
+                    elif sys.platform == "darwin":
+                        os.system(f"open '{export_subdir}'")
+                    else:
+                        os.system(f"xdg-open '{export_subdir}'")
+                except Exception as e:
+                    messagebox.showwarning("Warning", f"Could not open folder: {str(e)}")
+            
+            logger.info(f"Successfully exported {len(copied_files)} news frames to {export_subdir}")
+            
+        except Exception as e:
+            error_msg = f"Failed to export frames: {str(e)}"
+            logger.error(f"Export error: {e}")
+            messagebox.showerror("Export Error", error_msg)
+            self.news_results_text.insert(tk.END, f"❌ Export Failed: {error_msg}\n")
+            self.news_results_text.see(tk.END)
     
     def start_processing(self):
         """Start video processing in a separate thread"""

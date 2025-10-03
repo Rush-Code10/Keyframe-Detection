@@ -99,8 +99,54 @@ launch_gui.bat
 
 1. **Upload Tab**: Select your video file using browse button or drag & drop
 2. **Parameters Tab**: Fine-tune algorithm settings or use presets
-3. **Results Tab**: View keyframes, statistics, and performance plots
-4. **Logs Tab**: Monitor processing logs and debug information
+3. **News Detection Tab**: Extract keyframes from news content transitions (NEW!)
+4. **Results Tab**: View keyframes, statistics, and performance plots
+5. **Logs Tab**: Monitor processing logs and debug information
+
+## News Content Detection (NEW!)
+
+FrameSift Lite now includes specialized news content detection for analyzing news clips, broadcasts, and similar content. This feature automatically detects transitions where content changes, such as:
+
+- 📰 **Headline Changes**: Lower thirds, breaking news banners, and text overlays
+- 👥 **Person Changes**: New anchors, reporters, or guests appearing
+- 🎬 **Scene Changes**: Camera cuts, location changes, and graphic transitions
+
+### News Detection Features
+
+- **ROI-Based Analysis**: Focuses on specific regions where news content typically changes
+- **Face Detection**: Tracks people appearing and disappearing from the frame  
+- **Text Change Detection**: Uses thresholding to detect headline and banner changes
+- **Temporal Filtering**: Prevents extracting frames that are too close together
+- **Confidence Scoring**: Provides confidence levels for each detected transition
+
+### News Detection Workflow
+
+1. **Select News Video**: Browse and select your news clip or broadcast
+2. **Configure Thresholds**: 
+   - **Headline Change** (0.1-1.0): Sensitivity to text/banner changes
+   - **Person Change** (0.1-1.0): Sensitivity to face appearance/disappearance
+   - **Scene Change** (0.1-1.0): Sensitivity to general scene transitions
+   - **Min Gap** (0.5-10s): Minimum time between detected transitions
+3. **Process Video**: Click "Detect News Transitions" to analyze the video
+4. **View Results**: See detected transitions with confidence scores and types
+5. **Export Frames**: Use "💾 Export Frames" to save keyframes to your chosen folder
+
+### Use Cases for News Detection
+
+- **Content Analysis**: Analyze news broadcasts for content transitions
+- **Highlight Extraction**: Extract key moments from long news segments  
+- **Archive Processing**: Process news archives to find important segments
+- **Research Applications**: Study news content structure and presentation
+- **Quality Control**: Verify news content for proper transitions and flow
+
+### News Detection Results
+
+The news detector produces:
+- **Keyframe Images**: Extracted frames at transition points
+- **Transition Classification**: Each frame labeled as headline, person, or scene change
+- **Confidence Scores**: Numerical confidence for each detection
+- **Detailed Logs**: Processing information and detected transition summary
+- **Export Functionality**: Save transition frames to any folder with summary report
 
 ### Parameter Configuration
 
