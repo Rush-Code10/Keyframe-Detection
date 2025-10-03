@@ -1,10 +1,10 @@
 # News Detection Pipeline Implementation Summary
 
-## 🎯 Implementation Complete!
+## Implementation Complete!
 
 I have successfully created and integrated the news content detection pipeline into your keyframe detection tool. Here's what has been implemented:
 
-## 📁 New Files Created
+## New Files Created
 
 1. **`modules/news_detector.py`** - Core news detection module
    - `NewsContentDetector` class for analyzing video transitions
@@ -19,10 +19,10 @@ I have successfully created and integrated the news content detection pipeline i
    - Validates module initialization
    - Ensures components work correctly
 
-## 🔧 Modified Files
+## Modified Files
 
 1. **`framesift_gui.py`** - Main GUI application
-   - Added "📺 News Detection" tab
+   - Added "News Detection" tab
    - Integrated news detection controls and processing
    - Added news-specific progress tracking and results display
 
@@ -30,7 +30,7 @@ I have successfully created and integrated the news content detection pipeline i
    - Added comprehensive news detection section
    - Documented features, workflow, and use cases
 
-## 🎬 Features Implemented
+## Features Implemented
 
 ### Core Detection Algorithms
 - **ROI-Based Analysis**: Focuses on headline areas (top/bottom regions)
@@ -54,7 +54,7 @@ I have successfully created and integrated the news content detection pipeline i
 5. **Results Visualization**: Display transitions with metadata
 6. **Frame Export**: Export keyframes to custom folder with detailed summary
 
-## 🎯 Detection Types
+## Detection Types
 
 The system detects three types of news content transitions:
 
@@ -73,14 +73,14 @@ The system detects three types of news content transitions:
    - Location changes
    - Studio to field transitions
 
-## 🔧 Configuration Options
+## Configuration Options
 
 - **Headline Change Threshold**: Sensitivity to text/banner changes
 - **Person Change Threshold**: Sensitivity to face detection changes
 - **Scene Change Threshold**: Sensitivity to overall scene transitions
 - **Minimum Gap**: Time interval between transitions (0.5-10 seconds)
 
-## 📊 Output Format
+## Output Format
 
 Extracted keyframes are saved with descriptive filenames:
 ```
@@ -89,26 +89,26 @@ news_keyframe_XXXXXX_transition_type_confidence.jpg
 
 Example: `news_keyframe_000165_scene_change_1_00.jpg`
 
-## ✅ Testing Results
+## Testing Results
 
 The implementation has been tested with:
-- ✅ Module initialization
-- ✅ Video processing pipeline
-- ✅ GUI integration
-- ✅ Keyframe extraction
-- ✅ Results formatting
-- ✅ Error handling
+- Module initialization
+- Video processing pipeline
+- GUI integration
+- Keyframe extraction
+- Results formatting
+- Error handling
 
-## 🚀 Usage Instructions
+## Usage Instructions
 
 ### Method 1: GUI Interface
 ```bash
 python framesift_gui.py
 ```
-1. Go to "📺 News Detection" tab
+1. Go to "News Detection" tab
 2. Browse and select news video
 3. Adjust detection parameters
-4. Click "🎬 Detect News Transitions"
+4. Click "Detect News Transitions"
 5. View results and open results folder
 
 ### Method 2: Demo Script
@@ -125,7 +125,7 @@ extractor = NewsKeyframeExtractor(detector)
 keyframes = extractor.extract_keyframes("news_video.mp4", "output_dir")
 ```
 
-## 🎯 Key Benefits
+## Key Benefits
 
 1. **Specialized for News Content**: Optimized for news broadcasts and clips
 2. **Multi-Modal Detection**: Combines text, face, and scene analysis
@@ -135,14 +135,14 @@ keyframes = extractor.extract_keyframes("news_video.mp4", "output_dir")
 6. **Detailed Results**: Confidence scores and transition type classification
 7. **Thermal Management**: Automatic fan control to prevent laptop overheating during processing
 
-## 📈 Performance Characteristics
+## Performance Characteristics
 
 - **Processing Speed**: Real-time analysis for most video formats
 - **Memory Usage**: Efficient frame-by-frame processing
 - **Accuracy**: High precision for news content with proper parameter tuning
 - **Scalability**: Handles videos from short clips to full broadcasts
 
-## 🌡️ Thermal Management (NEW!)
+## Thermal Management (NEW!)
 
 The system now includes automatic thermal management to protect your laptop during intensive processing:
 

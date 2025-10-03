@@ -842,7 +842,7 @@ class FrameSiftGUI:
             def progress_callback(progress):
                 self.update_news_progress(10 + (progress * 0.9))  # Scale to 10-100%
             
-            keyframe_paths, text_results = extractor.extract_keyframes(
+            keyframe_paths = extractor.extract_keyframes(
                 video_path=self.current_news_video_path,
                 output_dir=output_dir,
                 progress_callback=progress_callback
@@ -851,7 +851,7 @@ class FrameSiftGUI:
             self.news_output_dir = output_dir
             
             # Update results display
-            self.root.after(0, lambda: self.news_processing_complete(keyframe_paths, text_results))
+            self.root.after(0, lambda: self.news_processing_complete(keyframe_paths))
             
         except Exception as e:
             error_msg = f"News processing error: {str(e)}"
@@ -872,26 +872,20 @@ class FrameSiftGUI:
         """Update news processing progress bar"""
         self.root.after(0, lambda: self.news_progress_var.set(value))
     
-    def news_processing_complete(self, keyframe_paths, text_results=None):
-        """Handle completion of news processing with text extraction"""
+    def news_processing_complete(self, keyframe_paths):
+        """Handle completion of news processing"""
         self.news_process_btn.config(state="normal")
         self.news_open_folder_btn.config(state="normal")
         self.news_export_btn.config(state="normal")
         self.news_progress_var.set(100)
         
-        # Store keyframe paths and text results for export
+        # Store keyframe paths for export
         self.news_keyframe_paths = keyframe_paths
-        self.news_text_results = text_results or []
         
         # Display results
         results_text = f"\n✅ News Content Detection Complete!\n"
-        results_text += f"📊 Extracted {len(keyframe_paths)} transition keyframes\n"
-        
-        if text_results:
-            total_text_regions = sum(len(result['text_regions']) for result in text_results)
-            results_text += f"📝 Extracted text from {len(text_results)} keyframes ({total_text_regions} text regions)\n"
-        
-        results_text += "\n"
+        results_text += f"📊 Detected {len(keyframe_paths)} transition keyframes\n"
+        results_text += f"📝 Text extraction will be performed during export\n\n"
         
         if keyframe_paths:
             results_text += "🎬 Detected Transitions:\n"
@@ -903,23 +897,10 @@ class FrameSiftGUI:
                     frame_num = parts[2]
                     transition_type = f"{parts[3]}_{parts[4]}"  # e.g., "scene_change"
                     confidence = f"{parts[5]}.{parts[6]}"
-                    results_text += f"  • Frame {frame_num}: {transition_type.replace('_', ' ').title()} (confidence: {confidence})"
-                    
-                    # Add text preview if available
-                    if text_results and i < len(text_results):
-                        text_result = text_results[i]
-                        if text_result['text_regions']:
-                            main_texts = [r['text'] for r in text_result['text_regions'] if len(r['text']) > 3]
-                            if main_texts:
-                                preview = ', '.join(main_texts[:2])  # Show first 2 text regions
-                                if len(preview) > 50:
-                                    preview = preview[:47] + "..."
-                                results_text += f" | Text: {preview}"
-                    results_text += "\n"
+                    results_text += f"  • Frame {frame_num}: {transition_type.replace('_', ' ').title()} (confidence: {confidence})\n"
             
             results_text += f"\n📁 Results saved to: {self.news_output_dir}\n"
-            if text_results:
-                results_text += f"📄 Text extraction results saved to: extracted_text.json\n"
+            results_text += f"� Use 'Export Frames' to extract text from selected keyframes\n"
         else:
             results_text += "ℹ️ No significant news transitions detected.\n"
             results_text += "Try adjusting the threshold parameters for more sensitive detection.\n"
@@ -927,7 +908,7 @@ class FrameSiftGUI:
         self.news_results_text.insert(tk.END, results_text)
         self.news_results_text.see(tk.END)
         
-        logger.info(f"News processing completed successfully. {len(keyframe_paths)} keyframes extracted with text from {len(text_results or [])} frames.")
+        logger.info(f"News processing completed successfully. {len(keyframe_paths)} keyframes extracted.")
     
     def news_processing_error(self, error_msg):
         """Handle news processing error"""
@@ -978,9 +959,20 @@ class FrameSiftGUI:
             export_subdir = os.path.join(export_dir, f"news_transitions_{timestamp}")
             os.makedirs(export_subdir, exist_ok=True)
             
-            # Copy files with progress tracking
+            # Initialize text extractor for OCR processing
+            from modules.text_extractor import create_text_extractor
+            text_extractor = None
+            try:
+                text_extractor = create_text_extractor()
+                self.news_results_text.insert(tk.END, "🔍 Text extraction initialized successfully\n")
+            except Exception as e:
+                logger.warning(f"Text extractor initialization failed: {e}")
+                self.news_results_text.insert(tk.END, f"⚠️ Text extraction not available: {e}\n")
+            
+            # Copy files and extract text with progress tracking
             total_files = len(self.news_keyframe_paths)
             copied_files = []
+            text_results = []
             
             for i, source_path in enumerate(self.news_keyframe_paths):
                 if os.path.exists(source_path):
@@ -991,14 +983,67 @@ class FrameSiftGUI:
                     shutil.copy2(source_path, dest_path)
                     copied_files.append(dest_path)
                     
+                    # Extract text from this keyframe if text extractor is available
+                    if text_extractor:
+                        try:
+                            # Load image for text extraction
+                            import cv2
+                            img = cv2.imread(source_path)
+                            if img is not None:
+                                # Parse frame info from filename
+                                parts = filename.replace('.jpg', '').split('_')
+                                frame_num = int(parts[2]) if len(parts) > 2 else i
+                                
+                                # Extract text
+                                extracted_text = text_extractor.extract_text_from_keyframe(img, frame_num, 0.0)
+                                
+                                if extracted_text.regions:
+                                    # Create text result entry
+                                    text_data = {
+                                        'keyframe_path': dest_path,
+                                        'original_filename': filename,
+                                        'frame_number': frame_num,
+                                        'ocr_method': extracted_text.processing_method,
+                                        'total_confidence': extracted_text.total_confidence,
+                                        'text_regions': []
+                                    }
+                                    
+                                    for region in extracted_text.regions:
+                                        text_data['text_regions'].append({
+                                            'text': region.text,
+                                            'confidence': region.confidence,
+                                            'bbox': region.bbox,
+                                            'region_type': region.region_type
+                                        })
+                                    
+                                    text_results.append(text_data)
+                                    
+                                    # Log found text
+                                    main_texts = [r.text for r in extracted_text.regions if len(r.text) > 3]
+                                    if main_texts:
+                                        logger.info(f"Text found in {filename}: {', '.join(main_texts[:2])}")
+                        except Exception as e:
+                            logger.warning(f"Text extraction failed for {filename}: {e}")
+                    
                     # Update progress in status
                     progress = ((i + 1) / total_files) * 100
-                    self.news_results_text.insert(tk.END, f"Exporting... {progress:.0f}%\r")
+                    self.news_results_text.insert(tk.END, f"Processing... {progress:.0f}% ({filename})\n")
                     self.news_results_text.see(tk.END)
                     self.root.update_idletasks()
             
-            # Clear the progress line
-            self.news_results_text.insert(tk.END, "\n")
+            # Save text extraction results if any were found
+            if text_results:
+                json_path = os.path.join(export_subdir, "extracted_text.json")
+                try:
+                    import json
+                    with open(json_path, 'w', encoding='utf-8') as f:
+                        json.dump(text_results, f, indent=2, ensure_ascii=False)
+                    self.news_results_text.insert(tk.END, f"📄 Text extraction results saved: extracted_text.json\n")
+                    logger.info(f"Text extraction results saved to {json_path}")
+                except Exception as e:
+                    logger.error(f"Failed to save text results: {e}")
+            
+            self.news_results_text.insert(tk.END, f"✅ Export completed! Text extracted from {len(text_results)} keyframes\n")
             
             # Create export summary file
             summary_path = os.path.join(export_subdir, "export_summary.txt")
@@ -1015,6 +1060,17 @@ class FrameSiftGUI:
                 f.write(f"  • Scene Threshold: {self.news_scene_threshold_var.get():.2f}\n")
                 f.write(f"  • Minimum Gap: {self.news_min_gap_var.get():.1f} seconds\n\n")
                 
+                # Text extraction summary
+                if text_results:
+                    total_text_regions = sum(len(result['text_regions']) for result in text_results)
+                    f.write("Text Extraction Results:\n")
+                    f.write(f"  • Frames with text detected: {len(text_results)}\n")
+                    f.write(f"  • Total text regions found: {total_text_regions}\n")
+                    f.write(f"  • OCR method used: {text_results[0]['ocr_method'] if text_results else 'N/A'}\n\n")
+                else:
+                    f.write("Text Extraction Results:\n")
+                    f.write("  • No text detected in exported keyframes\n\n")
+                
                 f.write("Exported Files:\n")
                 for i, file_path in enumerate(copied_files, 1):
                     filename = os.path.basename(file_path)
@@ -1026,12 +1082,25 @@ class FrameSiftGUI:
                         confidence = f"{parts[5]}.{parts[6]}"
                         f.write(f"  {i:2d}. {filename}\n")
                         f.write(f"      Frame: {frame_num}, Type: {transition_type.replace('_', ' ').title()}, Confidence: {confidence}\n")
+                        
+                        # Add text info if available
+                        text_info = next((t for t in text_results if t['original_filename'] == filename), None)
+                        if text_info and text_info['text_regions']:
+                            main_texts = [r['text'] for r in text_info['text_regions'] if len(r['text']) > 2]
+                            if main_texts:
+                                preview = ', '.join(main_texts[:2])
+                                if len(preview) > 60:
+                                    preview = preview[:57] + "..."
+                                f.write(f"      Text: {preview}\n")
                     else:
                         f.write(f"  {i:2d}. {filename}\n")
             
             # Show success message
             success_msg = f"✅ Export Complete!\n\n"
             success_msg += f"📊 Exported {len(copied_files)} transition frames\n"
+            if text_results:
+                total_text_regions = sum(len(result['text_regions']) for result in text_results)
+                success_msg += f"📝 Text extracted from {len(text_results)} frames ({total_text_regions} text regions)\n"
             success_msg += f"📁 Location: {export_subdir}\n"
             success_msg += f"📄 Summary: export_summary.txt\n\n"
             

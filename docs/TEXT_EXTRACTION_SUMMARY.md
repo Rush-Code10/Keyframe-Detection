@@ -1,38 +1,38 @@
 # Text Extraction for News Keyframes - IVP Implementation Summary
 
-## 🎯 **IMPLEMENTATION COMPLETE**
+## **IMPLEMENTATION COMPLETE**
 
 Successfully integrated advanced text extraction capabilities into the news detection pipeline using **Image and Video Processing (IVP)** concepts from your syllabus.
 
 ---
 
-## 📚 **IVP Concepts Implemented**
+## **IVP Concepts Implemented**
 
 ### **Unit 2: Image Enhancement**
-- ✅ **Linear Transformations**: Contrast stretching with piecewise linear functions
-- ✅ **Histogram Processing**: Histogram equalization for better contrast
-- ✅ **Neighborhood Processing**: Gaussian filtering for noise reduction
-- ✅ **Nonlinear Processing**: Adaptive enhancement techniques
+- **Linear Transformations**: Contrast stretching with piecewise linear functions
+- **Histogram Processing**: Histogram equalization for better contrast
+- **Neighborhood Processing**: Gaussian filtering for noise reduction
+- **Nonlinear Processing**: Adaptive enhancement techniques
 
 ### **Unit 4: Morphological Image Processing**
-- ✅ **Dilation**: Connect text characters for better detection
-- ✅ **Erosion**: Separate text lines and remove noise
-- ✅ **Opening**: Remove small noise artifacts
-- ✅ **Closing**: Fill gaps in text regions
-- ✅ **Morphological Algorithms**: Boundary extraction and region detection
+- **Dilation**: Connect text characters for better detection
+- **Erosion**: Separate text lines and remove noise
+- **Opening**: Remove small noise artifacts
+- **Closing**: Fill gaps in text regions
+- **Morphological Algorithms**: Boundary extraction and region detection
 
 ### **Unit 5: Edge Detection**
-- ✅ **Canny Edge Detector**: Enhanced text boundary detection
-- ✅ **Gradient-based Processing**: First and second order derivatives
+- **Canny Edge Detector**: Enhanced text boundary detection
+- **Gradient-based Processing**: First and second order derivatives
 
 ### **Unit 6: Image Segmentation**
-- ✅ **Otsu Method**: Automatic threshold selection for binarization
-- ✅ **Component Labeling**: Text region identification
-- ✅ **Region-based Segmentation**: Text area extraction
+- **Otsu Method**: Automatic threshold selection for binarization
+- **Component Labeling**: Text region identification
+- **Region-based Segmentation**: Text area extraction
 
 ---
 
-## 🛠️ **Technical Implementation**
+## **Technical Implementation**
 
 ### **New Modules Created:**
 1. **`modules/text_extractor.py`** - Core IVP text extraction engine
@@ -46,18 +46,18 @@ Successfully integrated advanced text extraction capabilities into the news dete
 
 ---
 
-## 🎬 **Features Implemented**
+## **Features Implemented**
 
 ### **OCR Engines:**
-- ✅ **EasyOCR**: Deep learning-based OCR (primary)
-- ✅ **Tesseract**: Traditional OCR (fallback)
-- ✅ **Multiple Preprocessing**: Different enhancement approaches
+- **EasyOCR**: Deep learning-based OCR (primary)
+- **Tesseract**: Traditional OCR (fallback)
+- **Multiple Preprocessing**: Different enhancement approaches
 
 ### **Text Region Classification:**
-- 🎯 **Headlines**: Upper portion, wide regions
-- 📰 **Tickers**: Bottom portion, scrolling text
-- 💬 **Captions**: Small text regions
-- 📝 **Other**: General text content
+- **Headlines**: Upper portion, wide regions
+- **Tickers**: Bottom portion, scrolling text
+- **Captions**: Small text regions
+- **Other**: General text content
 
 ### **IVP Enhancement Pipeline:**
 1. **Grayscale Conversion**
@@ -70,16 +70,16 @@ Successfully integrated advanced text extraction capabilities into the news dete
 
 ---
 
-## 📊 **Test Results**
+## **Test Results**
 
 ### **Synthetic News Image Test:**
 ```
-📊 OCR Results:
+OCR Results:
   Method: EasyOCR + Tesseract
   Confidence: 0.79
   Regions found: 9
 
-📝 Extracted Text:
+Extracted Text:
   1. [other] "12.30 PM EST" (conf: 0.96)
   2. [headline] "BREAKING NEWS" (conf: 1.00)
   3. [headline] "Major Technology Breakthrough" (conf: 0.98)
@@ -92,10 +92,10 @@ Successfully integrated advanced text extraction capabilities into the news dete
 ```
 
 ### **News Video Processing:**
-- ✅ **5 keyframes** extracted with transition detection
-- ✅ **Text extraction** attempted on each keyframe
-- ✅ **JSON output** with complete text analysis results
-- ✅ **Visual annotations** showing detected text regions
+- **5 keyframes** extracted with transition detection
+- **Text extraction** attempted on each keyframe
+- **JSON output** with complete text analysis results
+- **Visual annotations** showing detected text regions
 
 ---
 
