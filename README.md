@@ -190,8 +190,8 @@ FrameSift features advanced **News Content Detection** specifically designed for
 
 | Transition Type | Description | Detection Method | Use Cases |
 |-----------------|-------------|------------------|-----------|
-| **📰 Headline Changes** | Breaking news banners, lower thirds, text overlays | ROI-based difference analysis + text detection | Content analysis, topic tracking |
-| **👥 Person Changes** | Anchors, reporters, guests appearing/disappearing | Haar cascade face detection | Speaker identification, interview analysis |
+| **Headline Changes** | Breaking news banners, lower thirds, text overlays | ROI-based difference analysis + text detection | Content analysis, topic tracking |
+| **Person Changes** | Anchors, reporters, guests appearing/disappearing | Haar cascade face detection | Speaker identification, interview analysis |
 | **Scene Changes** | Camera cuts, location changes, graphic transitions | Histogram comparison + motion analysis | Shot boundary detection, program structure |
 
 ### Technical Implementation
@@ -664,10 +664,10 @@ python framesift_gui.py
 
 ## Applications & Use Cases
 
-### 📺 Media & Broadcasting
+### Media & Broadcasting
 
 #### News Analysis & Monitoring
-- **📰 Content Tracking**: Monitor news coverage and topic transitions
+- **Content Tracking**: Monitor news coverage and topic transitions
 - **Broadcast Structure**: Analyze program flow and segment boundaries  
 - **Media Research**: Study news presentation patterns and bias
 - **Archive Processing**: Make historical footage searchable and accessible
@@ -683,12 +683,12 @@ python framesift_gui.py
 
 #### Dataset Creation
 - **Training Data**: Generate labeled datasets for computer vision models
-- **📸 Frame Sampling**: Intelligent frame selection for ML training
-- **🔤 Text Recognition**: Create OCR training datasets from video content
-- **👥 Face Detection**: Build face recognition datasets from video sources
+- **Frame Sampling**: Intelligent frame selection for ML training
+- **Text Recognition**: Create OCR training datasets from video content
+- **Face Detection**: Build face recognition datasets from video sources
 
 #### Content Understanding
-- **🧠 Video Analysis**: Automated content classification and tagging
+- **Video Analysis**: Automated content classification and tagging
 - **Text Extraction**: Extract text content for search and indexing
 - **Object Detection**: Prepare data for object recognition systems
 - **Analytics**: Quantitative analysis of video content patterns
@@ -699,10 +699,10 @@ python framesift_gui.py
 - **Computer Vision Studies**: Baseline implementation for keyframe extraction research
 - **Algorithm Development**: Compare and develop new IVP techniques  
 - **Performance Analysis**: Benchmark different processing approaches
-- **🎥 Media Studies**: Analyze video content structure and presentation
+- **Media Studies**: Analyze video content structure and presentation
 
 #### Educational Applications
-- **👨‍🏫 Teaching Tool**: Demonstrate IVP concepts and algorithms
+- **Teaching Tool**: Demonstrate IVP concepts and algorithms
 - **Hands-on Learning**: Interactive parameter tuning and result visualization
 - **Algorithm Understanding**: Visual representation of processing steps
 - **Experimentation**: Safe environment for testing different approaches
@@ -724,10 +724,10 @@ python framesift_gui.py
 ### Technical Applications
 
 #### System Integration
-- **🔌 API Development**: Core algorithms for larger video processing systems
+- **API Development**: Core algorithms for larger video processing systems
 - **Pipeline Integration**: Component in automated video processing workflows
 - **Cloud Processing**: Scalable video analysis in cloud environments
-- **📱 Mobile Applications**: Lightweight processing for mobile video apps
+- **Mobile Applications**: Lightweight processing for mobile video apps
 
 #### Development & Testing
 - **Algorithm Prototyping**: Test new video processing ideas
